@@ -4,7 +4,9 @@ const version = SVGOMG_VERSION;
 const cachePrefix = 'svgomg-';
 const staticCacheName = `${cachePrefix}static-${version}`;
 const fontCacheName = `${cachePrefix}fonts`;
-const expectedCaches = [staticCacheName, fontCacheName];
+const inputSvgCache = `${cachePrefix}inputSvg`;
+const expectedCaches = [staticCacheName, fontCacheName, inputSvgCache];
+
 
 addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -59,6 +61,18 @@ async function handleFontRequest(request) {
 
 addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+
+  if (url.host === location.origin && url.pathname === '/') {
+    const inputSvg = event.request.headers.get('svg-input');
+    caches.open(inputSvgCache)
+      .then(cache => {
+        if (inputSvg) {
+          cache.put('/svg-input', new Response(inputSvg));
+        } else {
+          cache.delete('/svg-input');
+        }
+      });
+  }
 
   if (url.host == 'fonts.gstatic.com') {
     event.respondWith(handleFontRequest(event.request));
